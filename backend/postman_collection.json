@@ -1,0 +1,740 @@
+{
+  "info": {
+    "name": "Node Users API - RBAC System",
+    "description": "Complete API with Role-Based Access Control",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api_v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🌐 Public Routes",
+      "item": [
+        {
+          "name": "Register Web User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"status_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Web User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('token', response.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password Web User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Register API User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"apiuser\",\n  \"email\": \"api@example.com\",\n  \"password\": \"password123\",\n  \"description\": \"API Test User\",\n  \"status_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-users/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login API User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"apiuser\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-users/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 Personal Routes (My Data)",
+      "item": [
+        {
+          "name": "Get My Web User Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/web-users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update My Web User Info",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newemail@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update My Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"oldpassword\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/me/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "me", "password"]
+            }
+          }
+        },
+        {
+          "name": "Delete My Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/web-users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Get My API User Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api-users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update My API User Info",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated API user description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔐 Web User Management (Requires users.* permissions)",
+      "item": [
+        {
+          "name": "Get All Web Users (users.read)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/web-users",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users"]
+            }
+          }
+        },
+        {
+          "name": "Get Web User by ID (users.read)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/web-users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Web User (users.update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"updated@example.com\",\n  \"status_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "2"]
+            }
+          }
+        },
+        {
+          "name": "Delete Web User (users.delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/web-users/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "2"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔌 API User Management (Requires api_users.* permissions)",
+      "item": [
+        {
+          "name": "Get All API Users (api_users.read)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api-users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users"]
+            }
+          }
+        },
+        {
+          "name": "Get API User by ID (api_users.read)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api-users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update API User (api_users.update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated API user\",\n  \"status_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-users/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "2"]
+            }
+          }
+        },
+        {
+          "name": "Delete API User (api_users.delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api-users/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "2"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👑 Role Management - Web Users",
+      "item": [
+        {
+          "name": "Admin Create Web User (users.create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"adminuser\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\",\n  \"role_id\": 1,\n  \"status_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/admin/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "admin", "create"]
+            }
+          }
+        },
+        {
+          "name": "Assign Role to Web User (roles.assign)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/3/assign-role",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "3", "assign-role"]
+            }
+          }
+        },
+        {
+          "name": "Update Web User Role (roles.update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/3/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "3", "role"]
+            }
+          }
+        },
+        {
+          "name": "Get Web User Roles (roles.read)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/web-users/1/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "1", "roles"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👑 Role Management - API Users",
+      "item": [
+        {
+          "name": "Admin Create API User (users.create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"adminapi\",\n  \"email\": \"adminapi@example.com\",\n  \"password\": \"password123\",\n  \"description\": \"Admin created API user\",\n  \"role_id\": 1,\n  \"status_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-users/admin/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "admin", "create"]
+            }
+          }
+        },
+        {
+          "name": "Assign Role to API User (roles.assign)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-users/3/assign-role",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "3", "assign-role"]
+            }
+          }
+        },
+        {
+          "name": "Update API User Role (roles.update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-users/3/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "3", "role"]
+            }
+          }
+        },
+        {
+          "name": "Get API User Roles (roles.read)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api-users/1/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-users", "1", "roles"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧪 Permission Testing",
+      "item": [
+        {
+          "name": "Test users.read Permission",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/web-users",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Should require users.read permission', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "    if (pm.response.code === 403) {",
+                  "        pm.expect(pm.response.text()).to.include('users.read');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test users.delete Permission",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/web-users/999",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "999"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Should require users.delete permission', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403, 404]);",
+                  "    if (pm.response.code === 403) {",
+                  "        pm.expect(pm.response.text()).to.include('users.delete');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test roles.update Permission",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/web-users/1/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["web-users", "1", "role"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Should require roles.update permission', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "    if (pm.response.code === 403) {",
+                  "        pm.expect(pm.response.text()).to.include('roles.update');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
