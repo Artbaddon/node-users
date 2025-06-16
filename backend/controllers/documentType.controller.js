@@ -56,11 +56,9 @@ class DocumentTypeController {
       });
 
       if (!updateDocumentTypeModel || updateDocumentTypeModel.error) {
-        return res
-          .status(409)
-          .json({
-            error: updateDocumentTypeModel?.error || "Document Type not found",
-          });
+        return res.status(409).json({
+          error: updateDocumentTypeModel?.error || "Document Type not found",
+        });
       }
 
       res.status(201).json({
@@ -80,16 +78,22 @@ class DocumentTypeController {
       if (!id) {
         return res.status(400).json({ error: "ID is required" });
       }
+      console.log("Deleting document type with ID:", id);
 
       const deleteDocumentTypeModel = await DocumentTypeModel.delete(id);
+      console.log("Delete result:", deleteDocumentTypeModel);
 
       if (!deleteDocumentTypeModel || deleteDocumentTypeModel.error) {
-        return res.status(404).json({ error: deleteDocumentTypeModel?.error || "Document type not found" });
+        return res
+          .status(404)
+          .json({
+            error: deleteDocumentTypeModel?.error || "Document type not found",
+          });
       }
 
       res.status(200).json({
         message: "Document type deleted successfully",
-        id: deleteDocumentTypeModel,
+        id,
       });
     } catch (error) {
       console.error("Error deleting document type:", error);

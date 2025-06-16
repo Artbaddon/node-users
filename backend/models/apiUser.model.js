@@ -54,17 +54,37 @@ class ApiUserModel {
       return { error: error.message };
     }
   }
-
   static async update(id, { username, email, description, status_id }) {
     try {
-      let sqlQuery = `UPDATE api_users SET username = ?, email = ?, description = ?, status_id = ? WHERE id = ?`;
-      const [result] = await connect.query(sqlQuery, [
-        username,
-        email,
-        description,
-        status_id,
-        id,
-      ]);
+      // Build dynamic query based on provided fields
+      const fields = [];
+      const values = [];
+      
+      if (username !== undefined) {
+        fields.push('username = ?');
+        values.push(username);
+      }
+      if (email !== undefined) {
+        fields.push('email = ?');
+        values.push(email);
+      }
+      if (description !== undefined) {
+        fields.push('description = ?');
+        values.push(description);
+      }
+      if (status_id !== undefined) {
+        fields.push('status_id = ?');
+        values.push(status_id);
+      }
+      
+      if (fields.length === 0) {
+        return { error: "No fields to update" };
+      }
+      
+      values.push(id); // Add id for WHERE clause
+      
+      let sqlQuery = `UPDATE api_users SET ${fields.join(', ')} WHERE id = ?`;
+      const [result] = await connect.query(sqlQuery, values);
       return result.affectedRows;
     } catch (error) {
       return { error: error.message };
@@ -100,11 +120,10 @@ class ApiUserModel {
       return { error: error.message };
     }
   }
-
   // Assign a role to an API user
   static async assignRole(userId, roleId) {
     try {
-      let sqlQuery = `INSERT INTO api_user_roles (user_id, role_id) VALUES (?, ?)`;
+      let sqlQuery = `INSERT INTO api_user_roles (api_user_id, role_id) VALUES (?, ?)`;
       const [result] = await connect.query(sqlQuery, [userId, roleId]);
       return result.insertId;
     } catch (error) {
@@ -119,7 +138,7 @@ class ApiUserModel {
         SELECT r.id, r.name 
         FROM api_user_roles ur 
         JOIN roles r ON ur.role_id = r.id 
-        WHERE ur.user_id = ?
+        WHERE ur.api_user_id = ?
       `;
       const [result] = await connect.query(sqlQuery, [userId]);
       return result;
@@ -132,10 +151,10 @@ class ApiUserModel {
   static async updateRole(userId, newRoleId) {
     try {
       // Remove existing roles
-      await connect.query(`DELETE FROM api_user_roles WHERE user_id = ?`, [userId]);
+      await connect.query(`DELETE FROM api_user_roles WHERE api_user_id = ?`, [userId]);
       
       // Assign new role
-      let sqlQuery = `INSERT INTO api_user_roles (user_id, role_id) VALUES (?, ?)`;
+      let sqlQuery = `INSERT INTO api_user_roles (api_user_id, role_id) VALUES (?, ?)`;
       const [result] = await connect.query(sqlQuery, [userId, newRoleId]);
       return result.insertId;
     } catch (error) {

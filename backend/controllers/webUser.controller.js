@@ -180,7 +180,6 @@ class WebUserController {
       res.status(500).json({ error: error.message });
     }
   }
-
   async login(req, res) {
     try {
       const { username, password } = req.body;
@@ -191,10 +190,33 @@ class WebUserController {
         });
       }
 
-      // Find user
-      const user = await WebUserModel.findByName(username);
-      if (!user) {
+      // Find user with comprehensive information
+      const { connect } = await import("../config/db/connectMysql.js");
+        const userQuery = `
+        SELECT wu.id, wu.username, wu.email, wu.password_hash, wu.status_id, 
+               us.name as status_name, us.description as status_description,
+               p.first_name, p.last_name, p.photo_url, p.phone, p.address,
+               dt.name as document_type_name
+        FROM web_users wu
+        LEFT JOIN user_status us ON wu.status_id = us.id
+        LEFT JOIN profiles p ON wu.id = p.web_user_id
+        LEFT JOIN document_type dt ON p.document_type_id = dt.id
+        WHERE wu.username = ?
+      `;
+      
+      const [userRows] = await connect.query(userQuery, [username]);
+      
+      if (userRows.length === 0) {
         return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      const user = userRows[0];
+
+      // Check if user is active
+      if (user.status_id !== 1) {
+        return res.status(401).json({ 
+          error: "Account is not active. Please contact administrator." 
+        });
       }
 
       // Verify password
@@ -203,27 +225,84 @@ class WebUserController {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      // Get user roles and permissions
+      const rolesQuery = `
+        SELECT r.id as role_id, r.name as role_name, r.description as role_description,
+               GROUP_CONCAT(DISTINCT p.name) as permissions
+        FROM web_user_roles wur
+        JOIN roles r ON wur.role_id = r.id
+        LEFT JOIN role_permissions rp ON r.id = rp.role_id
+        LEFT JOIN permissions p ON rp.permission_id = p.id
+        WHERE wur.user_id = ? AND r.is_active = TRUE
+        GROUP BY r.id, r.name, r.description
+      `;
+      
+      const [roleRows] = await connect.query(rolesQuery, [user.id]);
+      
+      if (roleRows.length === 0) {
+        return res.status(401).json({ 
+          error: "No active roles assigned. Please contact administrator." 
+        });
+      }
+
+      // Process roles and permissions
+      const roles = roleRows.map(role => ({
+        id: role.role_id,
+        name: role.role_name,
+        description: role.role_description,
+        permissions: role.permissions ? role.permissions.split(',').map(p => p.trim()) : []
+      }));
+
+      // Get all unique permissions
+      const allPermissions = [...new Set(roles.flatMap(role => role.permissions))];
+
       // Update last login
       await WebUserModel.updateLastLogin(user.id);
 
-      // Generate JWT
+      // Generate JWT with enhanced payload
       const token = jwt.sign(
-        { userId: user.id, username: user.username },
+        { 
+          userId: user.id, 
+          username: user.username,
+          email: user.email,
+          roles: roles.map(r => ({ id: r.id, name: r.name }))
+        },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
 
+      // Prepare comprehensive user response (excluding password_hash)
+      const userResponse = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        status: {
+          id: user.status_id,
+          name: user.status_name,
+          description: user.status_description
+        },
+        profile: {
+          firstName: user.first_name,
+          lastName: user.last_name,
+          fullName: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null,
+          photoUrl: user.photo_url,
+          phone: user.phone,
+          address: user.address,
+          documentType: user.document_type_name
+        },
+        roles: roles,
+        permissions: allPermissions,
+        loginTime: new Date().toISOString()
+      };
+
       res.status(200).json({
         message: "Login successful",
         token,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email
-        }
+        user: userResponse
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error('Login error:', error);
+      res.status(500).json({ error: "Internal server error during login" });
     }
   }
 
@@ -491,7 +570,7 @@ class WebUserController {
   // NEW: Admin creates user with chosen role
   async adminCreate(req, res) {
     try {
-      const { username, email, password, first_name, last_name, status_id = 1, role_id = 2 } = req.body;
+      const { username, email, password, first_name, last_name, status_id , role_id } = req.body;
 
       if (!username || !email || !password) {
         return res.status(400).json({
@@ -509,14 +588,19 @@ class WebUserController {
         password_hash: passwordHash,
         status_id: parseInt(status_id),
       });
-
+      
+      if (userId.error ) {
+        return res.status(500).json({ error: userId.error || "Failed to create user" });
+      }
       if (userId.error) {
         return res.status(500).json({ error: userId.error });
       }
-
+      
       // 🎯 ASSIGN CHOSEN ROLE
-      const roleAssignment = await WebUserModel.assignRole(userId, parseInt(role_id));
-      if (roleAssignment.error) {
+      const roleAssignment = await WebUserModel.assignRole(userId, role_id);
+  
+      if (!roleAssignment || roleAssignment.error) {
+        console.log("Role assignment failed:", roleAssignment);
         return res.status(500).json({ error: "Failed to assign role" });
       }
 

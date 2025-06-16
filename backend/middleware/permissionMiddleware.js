@@ -3,11 +3,10 @@ import { connect } from "../config/db/connectMysql.js";
 // Let's check the database for real admin users
 export const requireAdmin = async (req, res, next) => {
   try {
-    const userId = req.userId;
+    const userId = req.user.userId; // ✅ Use req.user.userId
 
     console.log("Checking if user", userId, "has admin role in database");
 
-    // Query: Check if this user has admin role
     const query = `
       SELECT r.name as role_name 
       FROM web_users u
@@ -35,24 +34,23 @@ export const requireAdmin = async (req, res, next) => {
 export const requirePermission = (requiredPermission) => {
   return async (req, res, next) => {
     try {
-      const userId = req.userId;
+      const userId = req.user.userId; // ✅ Use req.user.userId
       
       console.log(`Checking if user ${userId} has permission: ${requiredPermission}`);
       
       const query = `
-        SELECT p.module_name, p.action 
-        FROM web_users u
-        JOIN web_user_roles ur ON u.id = ur.user_id
-        JOIN roles r ON ur.role_id = r.id
+        SELECT p.name as permission_name
+        FROM web_users wu
+        JOIN web_user_roles wur ON wu.id = wur.user_id
+        JOIN roles r ON wur.role_id = r.id
         JOIN role_permissions rp ON r.id = rp.role_id
         JOIN permissions p ON rp.permission_id = p.id
-        WHERE u.id = ? AND CONCAT(p.module_name, '.', p.action) = ?
+        WHERE wu.id = ? AND p.name = ? AND r.is_active = TRUE AND p.is_active = TRUE
       `;
       
       const [result] = await connect.query(query, [userId, requiredPermission]);
       
       if (result.length > 0) {
-        console.log(`✅ User has permission: ${requiredPermission}`);
         next();
       } else {
         console.log(`❌ User lacks permission: ${requiredPermission}`);
@@ -64,3 +62,4 @@ export const requirePermission = (requiredPermission) => {
     }
   };
 };
+

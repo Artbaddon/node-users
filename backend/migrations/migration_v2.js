@@ -148,7 +148,6 @@ const sqlStatements = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES web_users(id) ON DELETE CASCADE,
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
-    FOREIGN KEY (assigned_by) REFERENCES web_users(id) ON DELETE RESTRICT,
     UNIQUE KEY uk_web_user_role (user_id, role_id)
   ) ENGINE=InnoDB;`,
 

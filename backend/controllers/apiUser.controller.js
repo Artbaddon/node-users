@@ -160,8 +160,7 @@ class ApiUserController {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
-  }
-  async login(req, res) {
+  }  async login(req, res) {
     try {
       const { username, email, password } = req.body;
 
@@ -171,33 +170,80 @@ class ApiUserController {
         });
       }
 
-      // Find API user by username or email
-      let user;
-      if (username) {
-        user = await ApiUserModel.findByName(username);
-      } else {
-        user = await ApiUserModel.findByEmail(email);
-      }
-
-      if (!user) {
+      // Find API user by username or email with comprehensive information
+      const { connect } = await import("../config/db/connectMysql.js");
+      const userQuery = `
+        SELECT au.id, au.username, au.email, au.password_hash, au.description, 
+               au.status_id, us.name as status_name, us.description as status_description
+        FROM api_users au
+        LEFT JOIN user_status us ON au.status_id = us.id
+        WHERE ${username ? 'au.username = ?' : 'au.email = ?'}
+      `;
+      
+      const [userRows] = await connect.query(userQuery, [username || email]);
+      
+      if (userRows.length === 0) {
         return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      const user = userRows[0];
+
+      // Check if user is active
+      if (user.status_id !== 1) {
+        return res.status(401).json({ 
+          error: "Account is not active. Please contact administrator." 
+        });
       }
 
       // Verify password
-      const isValidPassword = await comparePassword(
-        password,
-        user.password_hash
-      );
+      const isValidPassword = await comparePassword(password, user.password_hash);
       if (!isValidPassword) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      // Get user roles and permissions
+      const rolesQuery = `
+        SELECT r.id as role_id, r.name as role_name, r.description as role_description,
+               GROUP_CONCAT(DISTINCT p.name) as permissions
+        FROM api_user_roles aur
+        JOIN roles r ON aur.role_id = r.id
+        LEFT JOIN role_permissions rp ON r.id = rp.role_id
+        LEFT JOIN permissions p ON rp.permission_id = p.id
+        WHERE aur.api_user_id = ? AND r.is_active = TRUE
+        GROUP BY r.id, r.name, r.description
+      `;
+      
+      const [roleRows] = await connect.query(rolesQuery, [user.id]);
+      
+      if (roleRows.length === 0) {
+        return res.status(401).json({ 
+          error: "No active roles assigned. Please contact administrator." 
+        });
+      }
+
+      // Process roles and permissions
+      const roles = roleRows.map(role => ({
+        id: role.role_id,
+        name: role.role_name,
+        description: role.role_description,
+        permissions: role.permissions ? role.permissions.split(',').map(p => p.trim()) : []
+      }));
+
+      // Get all unique permissions
+      const allPermissions = [...new Set(roles.flatMap(role => role.permissions))];
+
       // Update last login
       await ApiUserModel.updateLastLogin(user.id);
 
-      // Generate JWT token
+      // Generate JWT with enhanced payload
       const token = jwt.sign(
-        { userId: user.id, username: user.username, type: "api" },
+        { 
+          userId: user.id, 
+          username: user.username,
+          email: user.email,
+          type: "api",
+          roles: roles.map(r => ({ id: r.id, name: r.name }))
+        },
         process.env.JWT_SECRET,
         { expiresIn: "24h" }
       );
@@ -212,18 +258,30 @@ class ApiUserController {
         return res.status(500).json({ error: "Failed to create API token" });
       }
 
+      // Prepare comprehensive user response (excluding password_hash)
+      const userResponse = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        description: user.description,
+        status: {
+          id: user.status_id,
+          name: user.status_name,
+          description: user.status_description
+        },
+        roles: roles,
+        permissions: allPermissions,
+        loginTime: new Date().toISOString()
+      };
+
       res.status(200).json({
         message: "Login successful",
         token,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          description: user.description,
-        },
+        user: userResponse
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error('API Login error:', error);
+      res.status(500).json({ error: "Internal server error during login" });
     }
   }
 
@@ -335,7 +393,6 @@ class ApiUserController {
       res.status(500).json({ error: error.message });
     }
   }
-
   async updateMyInfo(req, res) {
     try {
       const userId = req.userId; // From JWT token
@@ -361,6 +418,7 @@ class ApiUserController {
         username,
         email,
         description,
+        status_id: undefined // Don't allow users to change their own status
       });
 
       if (result.error) {
@@ -457,26 +515,31 @@ class ApiUserController {
       res.status(500).json({ error: error.message });
     }
   }
-
   // Admin create API user with role assignment
   async adminCreate(req, res) {
     try {
       const { username, email, password, description, role_id, status_id } =
         req.body;
 
+      if (!username || !email || !password) {
+        return res.status(400).json({
+          error: "Username, email, and password are required",
+        });
+      }
+
       // Check if user already exists
       const existingUser = await ApiUserModel.findByName(username);
-      if (existingUser) {
+      if (existingUser && existingUser.id) {
         return res.status(400).json({ error: "Username already exists" });
       }
 
       const existingEmail = await ApiUserModel.findByEmail(email);
-      if (existingEmail) {
+      if (existingEmail && existingEmail.id) {
         return res.status(400).json({ error: "Email already exists" });
       }
 
-      // Hash password
-      const passwordHash = await bcrypt.hash(password, 10);
+      // Hash password using the correct import
+      const passwordHash = await encryptPassword(password);
 
       // Create user
       const userId = await ApiUserModel.create({
