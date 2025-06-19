@@ -1,59 +1,23 @@
 class DataTableComponent {
   constructor(config) {
-    this.config = {
-      tableId: config.tableId,
-      apiUrl: config.apiUrl,
-      columns: config.columns,
-      actions: config.actions || ['view', 'edit', 'delete'],
-      requiredPermissions: config.requiredPermissions || [],
-      entityName: config.entityName || 'Item',
-      modalId: config.modalId || 'modal-form',
-      ...config
-    };
-    
+    console.log('📊 DataTable config received:', config);
+    this.config = config;
     this.table = null;
     this.data = [];
     this.init();
   }
 
   async init() {
-    // Check permissions
-    if (!this.hasRequiredPermissions()) {
-      this.showAccessDenied();
-      return;
-    }
-
-    // Initialize DataTable
     this.initializeDataTable();
-    
-    // Load data
     await this.loadData();
-    
-    // Setup event listeners
     this.setupEventListeners();
   }
 
-  hasRequiredPermissions() {
-    if (this.config.requiredPermissions.length === 0) return true;
-    return Auth.hasAnyPermission(this.config.requiredPermissions);
-  }
-
-  showAccessDenied() {
-    const tableContainer = document.querySelector(`#${this.config.tableId}`);
-    if (tableContainer) {
-      tableContainer.innerHTML = `
-        <div class="alert alert-warning text-center">
-          <i class="bi bi-exclamation-triangle"></i>
-          You don't have permission to view this content.
-        </div>
-      `;
-    }
-  }
   initializeDataTable() {
-    // Check if DataTable is already initialized and destroy it
     const tableElement = document.querySelector(`#${this.config.tableId}`);
+    
+    // Destroy existing table
     if (tableElement && $.fn.DataTable.isDataTable(tableElement)) {
-      console.log('🔄 Destroying existing DataTable before reinitializing...');
       $(tableElement).DataTable().destroy();
     }
     
@@ -68,25 +32,18 @@ class DataTableComponent {
       language: {
         emptyTable: `No ${this.config.entityName.toLowerCase()}s found`,
         loadingRecords: "Loading...",
-        processing: "Processing...",
         search: "Search:",
-        lengthMenu: "Show _MENU_ entries",
-        info: "Showing _START_ to _END_ of _TOTAL_ entries",
-        paginate: {
-          first: "First",
-          last: "Last",
-          next: "Next",
-          previous: "Previous"
-        }
+        lengthMenu: "Show _MENU_ entries"
       },
-      drawCallback: () => {
-        // Re-setup event listeners after each draw
-        this.setupRowEventListeners();
-      }
+      drawCallback: () => this.setupRowEventListeners()
     });
   }
-
   buildColumnDefinitions() {
+    if (!this.config.columns || !Array.isArray(this.config.columns)) {
+      console.error('❌ Table configuration missing columns array:', this.config);
+      throw new Error('Table configuration must include a columns array');
+    }
+
     const columns = this.config.columns.map(col => ({
       title: col.label,
       data: col.key,
@@ -95,8 +52,8 @@ class DataTableComponent {
       className: col.className || ''
     }));
 
-    // Add actions column if actions are configured
-    if (this.config.actions.length > 0) {
+    // Add actions column
+    if (this.config.actions && this.config.actions.length > 0) {
       columns.push({
         title: 'Actions',
         data: null,
@@ -109,85 +66,44 @@ class DataTableComponent {
     return columns;
   }
   renderActionButtons(row) {
-    console.log('🔧 Rendering action buttons for row:', row);
-    console.log('🔧 Available actions:', this.config.actions);
-    
     const buttons = [];
     
-    if (this.config.actions.includes('view') && this.canPerformAction('view')) {
-      console.log('✅ Adding view button');
+    if (this.config.actions.includes('view')) {
       buttons.push(`
         <button class="btn btn-sm btn-outline-secondary me-1 view-btn" 
-                data-id="${row.id}" 
-                data-bs-toggle="modal" 
-                data-bs-target="#${this.config.modalId}"
-                title="View ${this.config.entityName}">
+                data-id="${row.id}" title="View">
           <i class="bi bi-eye"></i>
         </button>
       `);
-    } else {
-      console.log('❌ View button not added - action check failed');
     }
 
-    if (this.config.actions.includes('edit') && this.canPerformAction('edit')) {
-      console.log('✅ Adding edit button');
+    if (this.config.actions.includes('edit')) {
       buttons.push(`
         <button class="btn btn-sm btn-outline-primary me-1 edit-btn" 
-                data-id="${row.id}"
-                data-bs-toggle="modal" 
-                data-bs-target="#${this.config.modalId}"
-                title="Edit ${this.config.entityName}">
+                data-id="${row.id}" title="Edit">
           <i class="bi bi-pencil"></i>
         </button>
       `);
-    } else {
-      console.log('❌ Edit button not added - action check failed');
     }
 
-    if (this.config.actions.includes('delete') && this.canPerformAction('delete')) {
-      console.log('✅ Adding delete button');
+    if (this.config.actions.includes('delete')) {
       buttons.push(`
         <button class="btn btn-sm btn-outline-danger delete-btn" 
-                data-id="${row.id}"
-                title="Delete ${this.config.entityName}">
+                data-id="${row.id}" title="Delete">
           <i class="bi bi-trash"></i>
         </button>
       `);
-    } else {
-      console.log('❌ Delete button not added - action check failed');
     }
 
-    const result = buttons.join('');
-    console.log('🔧 Final button HTML:', result);
-    return result;
+    console.log(`🔧 Rendered actions for row ${row.id}:`, buttons.length, 'buttons');
+    return buttons.join('');
   }
-  canPerformAction(action) {
-    // For now, allow all actions for authenticated users
-    // TODO: Implement proper permission checking later
-    if (!Auth.isLoggedIn()) {
-      return false;
-    }
-    
-    // Check if user has admin role (bypass permission check)
-    if (Auth.hasRole('Admin') || Auth.hasRole('admin') || Auth.hasRole('super_admin')) {
-      return true;
-    }
-    
-    // Try the specific permission first
-    const permission = `${this.config.entityName.toLowerCase()}:${action}`;
-    if (Auth.hasPermission && Auth.hasPermission(permission)) {
-      return true;
-    }
-    
-    // Fallback: allow basic actions for logged-in users
-    return true;
-  }
-
   async loadData() {
+    console.log('📊 Loading data from:', this.config.apiUrl);
     try {
-      this.showLoading(true);
-      
       const token = Auth.getToken();
+      console.log('🔑 Using token:', token ? 'Present' : 'Missing');
+      
       const response = await fetch(this.config.apiUrl, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -195,99 +111,131 @@ class DataTableComponent {
         }
       });
 
+      console.log('📡 Response status:', response.status);
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('Data loaded:', result.documentTypes);
-      this.data = result.documentTypes;
+      console.log('📄 API response:', result);      // Handle different response formats
+      this.data = result.data || result.documentTypes || result.users || result.roles || result.permissions || [];
+      console.log('📋 Loaded data:', this.data.length, 'items');
       
-      // Clear and reload table data
+      if (this.data.length > 0) {
+        console.log('📄 Sample data item:', this.data[0]);
+        console.log('📋 Available fields:', Object.keys(this.data[0]));
+      }
+      
       this.table.clear();
       this.table.rows.add(this.data);
       this.table.draw();
       
+      console.log('✅ Data loaded and table updated');
+      
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading data:', error);
       this.showError('Failed to load data: ' + error.message);
-    } finally {
-      this.showLoading(false);
     }
   }
 
   setupEventListeners() {
-    // Create button listener
-    const createBtn = document.querySelector('[data-bs-target="#' + this.config.modalId + '"]');
-    if (createBtn && !createBtn.classList.contains('view-btn') && !createBtn.classList.contains('edit-btn')) {
+    const createBtn = document.querySelector(`[data-bs-target="#${this.config.modalId}"]`);
+    if (createBtn) {
       createBtn.addEventListener('click', () => this.handleCreate());
     }
-
-    // Setup row-specific listeners
     this.setupRowEventListeners();
-  }
+  }  setupRowEventListeners() {
+    // Use event delegation for dynamically created buttons
+    const tableElement = document.getElementById(this.config.tableId);
+    if (!tableElement) {
+      console.error('❌ Table element not found:', this.config.tableId);
+      return;
+    }
 
-  setupRowEventListeners() {
-    // View button listeners
-    document.querySelectorAll('.view-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
+    console.log('🔧 Setting up event listeners for table:', this.config.tableId);
+
+    // Remove existing delegated listeners to prevent duplicates
+    const oldHandler = tableElement._actionHandler;
+    if (oldHandler) {
+      tableElement.removeEventListener('click', oldHandler);
+    }
+
+    // Create new delegated event handler
+    const actionHandler = (e) => {
+      console.log('🖱️ Table click detected:', e.target);
+      
+      const button = e.target.closest('.view-btn, .edit-btn, .delete-btn');
+      if (!button) {
+        console.log('❌ No action button found');
+        return;
+      }
+
+      console.log('✅ Action button found:', button.className);
+      
+      const id = button.dataset.id;
+      if (!id) {
+        console.error('❌ No ID found on button:', button);
+        return;
+      }
+
+      console.log('🔑 Button ID:', id);
+
+      if (button.classList.contains('view-btn')) {
+        console.log('👁️ Handling view for ID:', id);
         this.handleView(id);
-      });
-    });
-
-    // Edit button listeners
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
+      } else if (button.classList.contains('edit-btn')) {
+        console.log('✏️ Handling edit for ID:', id);
         this.handleEdit(id);
-      });
-    });
-
-    // Delete button listeners
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
+      } else if (button.classList.contains('delete-btn')) {
+        console.log('🗑️ Handling delete for ID:', id);
         this.handleDelete(id);
-      });
-    });
+      }
+    };
+
+    // Store reference for later removal
+    tableElement._actionHandler = actionHandler;
+    tableElement.addEventListener('click', actionHandler);
+    
+    console.log(`✅ Event listeners set up for ${this.config.entityName} table`);
   }
 
   handleCreate() {
-    console.log('Create new', this.config.entityName);
-    // Trigger custom event
     document.dispatchEvent(new CustomEvent('table:create', {
       detail: { entityName: this.config.entityName }
     }));
   }
-
   handleView(id) {
+    console.log('🔍 HandleView called with ID:', id);
     const item = this.data.find(row => row.id == id);
-    console.log('View', this.config.entityName, id, item);
+    console.log('📄 Found item:', item);
     
-    // Trigger custom event
+    const eventDetail = { id, item, entityName: this.config.entityName };
+    console.log('📤 Dispatching table:view event:', eventDetail);
+    
     document.dispatchEvent(new CustomEvent('table:view', {
-      detail: { id, item, entityName: this.config.entityName }
+      detail: eventDetail
     }));
   }
 
   handleEdit(id) {
+    console.log('✏️ HandleEdit called with ID:', id);
     const item = this.data.find(row => row.id == id);
-    console.log('Edit', this.config.entityName, id, item);
+    console.log('📄 Found item:', item);
     
-    // Trigger custom event
+    const eventDetail = { id, item, entityName: this.config.entityName };
+    console.log('📤 Dispatching table:edit event:', eventDetail);
+    
     document.dispatchEvent(new CustomEvent('table:edit', {
-      detail: { id, item, entityName: this.config.entityName }
+      detail: eventDetail
     }));
   }
 
   async handleDelete(id) {
     const item = this.data.find(row => row.id == id);
-    const itemName = item?.name || item?.title || `${this.config.entityName} #${id}`;
+    const itemName = item?.name || item?.username || `${this.config.entityName} #${id}`;
     
-    if (!confirm(`Are you sure you want to delete "${itemName}"?`)) {
-      return;
-    }
+    if (!confirm(`Are you sure you want to delete "${itemName}"?`)) return;
 
     try {
       const token = Auth.getToken();
@@ -303,47 +251,12 @@ class DataTableComponent {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Reload data
       await this.loadData();
-      
-      // Show success message
       this.showSuccess(`${this.config.entityName} deleted successfully`);
       
     } catch (error) {
       console.error('Error deleting item:', error);
       this.showError('Failed to delete: ' + error.message);
-    }
-  }
-
-  showLoading(show) {
-    const tableContainer = document.querySelector(`#${this.config.tableId}_wrapper`);
-    if (!tableContainer) return;
-
-    if (show) {
-      if (!document.querySelector('.loading-overlay')) {
-        const overlay = document.createElement('div');
-        overlay.className = 'loading-overlay';
-        overlay.innerHTML = `
-          <div class="text-center">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-            <div class="mt-2">Loading ${this.config.entityName.toLowerCase()}s...</div>
-          </div>
-        `;
-        overlay.style.cssText = `
-          position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(255,255,255,0.8); z-index: 1000;
-          display: flex; align-items: center; justify-content: center;
-        `;
-        tableContainer.style.position = 'relative';
-        tableContainer.appendChild(overlay);
-      }
-    } else {
-      const overlay = document.querySelector('.loading-overlay');
-      if (overlay) {
-        overlay.remove();
-      }
     }
   }
 
@@ -356,7 +269,6 @@ class DataTableComponent {
   }
 
   showNotification(message, type = 'info') {
-    // Create toast notification
     const toast = document.createElement('div');
     toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
     toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
@@ -366,16 +278,9 @@ class DataTableComponent {
     `;
     
     document.body.appendChild(toast);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-      if (toast.parentNode) {
-        toast.remove();
-      }
-    }, 5000);
+    setTimeout(() => toast.remove(), 5000);
   }
 
-  // Public methods
   refresh() {
     return this.loadData();
   }
@@ -383,57 +288,7 @@ class DataTableComponent {
   getData() {
     return this.data;
   }
-
-  getSelectedRow(id) {
-    return this.data.find(row => row.id == id);
-  }
 }
 
-// Initialize when page loads
-document.addEventListener("DOMContentLoaded", () => {
-  if (typeof Auth !== "undefined" && Auth.isLoggedIn()) {
-    // Make table globally accessible for onclick events
-    window.documentTypeTable = new DataTableComponent({
-      tableId: 'data-table',
-      apiUrl: API_CONFIG.getFullUrl(API_ENDPOINTS.DOCUMENT_TYPE.LIST),
-      columns: [
-        { key: "id", label: "ID" },
-        { key: "name", label: "Name" },
-        { key: "description", label: "Description" }
-      ],
-      entityName: 'Document Type',
-      modalId: 'modal-form'
-    });
-
-    // Handle form submission
-    document
-      .getElementById("documentTypeForm")
-      .addEventListener("submit", (e) => {
-        e.preventDefault();
-        window.documentTypeTable.save();
-      });
-
-    // Handle create button
-    document
-      .querySelector('[data-bs-target="#modal-form"]')
-      .addEventListener("click", () => {
-        window.documentTypeTable.showModal(null, "create");
-      });
-
-    // Clean up modal backdrop when hidden
-    document
-      .getElementById("modal-form")
-      .addEventListener("hidden.bs.modal", () => {
-        // Remove any leftover backdrops
-        const backdrops = document.querySelectorAll(".modal-backdrop");
-        backdrops.forEach((backdrop) => backdrop.remove());
-
-        // Reset body overflow
-        document.body.style.overflow = "";
-        document.body.classList.remove("modal-open");
-      });
-  } else {
-    console.log("User not authenticated, redirecting...");
-    window.location.href = "../../views/login/index.html";
-  }
-});
+// DataTableComponent class can be used by any module
+// Initialization is handled by individual modules, not here automatically

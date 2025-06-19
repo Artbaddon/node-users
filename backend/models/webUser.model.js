@@ -29,22 +29,55 @@ class WebUserModel {
     } catch (error) {
       return { error: error.message };
     }
-  }
-
-  static async show() {
+  }  static async show() {
     try {
       const [result] = await connect.query(`CALL sp_get_all_web_users()`);
       return result[0];
     } catch (error) {
       return { error: error.message };
     }
-  }
-
-  static async findById(id) {
+  }  static async findById(id) {
     try {
       let sqlQuery = `SELECT * FROM web_users WHERE id = ?`;
       const [result] = await connect.query(sqlQuery, [id]);
-      return result[0] || null;
+      const user = result[0];
+      
+      if (user) {
+        // Get roles for this user
+        try {
+          const roles = await this.getUserRoles(user.id);
+          user.roles = roles;
+          // For compatibility with frontend, add primary role info
+          if (roles && roles.length > 0) {
+            user.role_id = roles[0].id;
+            user.role_name = roles[0].name;
+          }
+        } catch (roleError) {
+          console.error(`Error getting roles for user ${user.id}:`, roleError);
+          user.roles = [];
+        }
+
+        // Get profile information for this user
+        try {
+          const ProfileModel = (await import('./profile.model.js')).default;
+          const profile = await ProfileModel.findByWebUserId(user.id);
+          if (profile) {
+            // Add profile fields to the user object
+            user.first_name = profile.first_name;
+            user.last_name = profile.last_name;
+            user.address = profile.address;
+            user.phone = profile.phone;
+            user.document_type_id = profile.document_type_id;
+            user.document_number = profile.document_number;
+            user.photo_url = profile.photo_url;
+            user.birth_date = profile.birth_date;
+          }
+        } catch (profileError) {
+          console.error(`Error getting profile for user ${user.id}:`, profileError);
+        }
+      }
+      
+      return user || null;
     } catch (error) {
       return { error: error.message };
     }

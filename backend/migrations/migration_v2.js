@@ -225,6 +225,7 @@ const sqlStatements = [
     us.description as status_description,
     p.first_name,
     p.last_name,
+    p.address,
     p.phone,
     p.document_number,
     p.photo_url,

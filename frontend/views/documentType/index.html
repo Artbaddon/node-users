@@ -242,9 +242,17 @@
     <script src="../../assets/js/util/Navigation.js"></script>
     <script src="../../assets/js/util/roleBasedUI.js"></script>
 
-    <!-- Page-specific -->
+    <!-- Modular system -->
     <script src="../../assets/js/util/Table.js"></script>
-    <script src="./../../assets/js/util/config/documentTypeConfig.js"></script>
-    <script src="../../assets/js/util/controllers/documentType.controller.js"></script>
+    <script src="../../assets/js/util/BaseModule.js"></script>
+    <script src="../../assets/js/util/config/ModuleConfigs.js"></script>
+
+    <!-- Initialize the module -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const documentTypeModule = new BaseModule(ModuleConfigs.documentType);
+        documentTypeModule.init();
+      });
+    </script>
   </body>
 </html>

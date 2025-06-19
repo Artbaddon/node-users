@@ -109,6 +109,47 @@ class ProfileModel {
       return { error: error.message };
     }
   }
+  static async findByWebUserId(web_user_id) {
+    try {
+      let sqlQuery = `SELECT * FROM profiles WHERE web_user_id = ?`;
+      const [result] = await connect.query(sqlQuery, [web_user_id]);
+      return result[0] || null;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
+  static async updateByWebUserId(
+    web_user_id,
+    {
+      first_name,
+      last_name,
+      address,
+      phone,
+      document_type_id,
+      document_number,
+      photo_url,
+      birth_date,
+    }
+  ) {
+    try {
+      let sqlQuery = `UPDATE profiles SET first_name = ?, last_name = ?, address = ?, phone = ?, document_type_id = ?, document_number = ?, photo_url = ?, birth_date = ? WHERE web_user_id = ?`;
+      const [result] = await connect.query(sqlQuery, [
+        first_name,
+        last_name,
+        address,
+        phone,
+        document_type_id,
+        document_number,
+        photo_url,
+        birth_date,
+        web_user_id,
+      ]);
+      return result.affectedRows;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
 }
 
 export default ProfileModel;
