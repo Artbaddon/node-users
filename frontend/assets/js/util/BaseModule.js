@@ -6,8 +6,17 @@ class BaseModule {
     this.currentMode = "create";
     this.currentItem = null;
     this.isInitialized = false;
-  }
-  validateConfig(config) {
+  }validateConfig(config) {
+    // Check if config exists
+    if (!config) {
+      throw new Error('Config is required but was not provided');
+    }
+    
+    // Check if config is an object
+    if (typeof config !== 'object') {
+      throw new Error('Config must be an object');
+    }
+    
     const required = ['tableId', 'apiUrl', 'entityName', 'columns'];
     const missing = required.filter(prop => !config[prop]);
     
@@ -206,10 +215,14 @@ class BaseModule {
 
     console.log('📝 Populating form with data:', data);
 
-    // Auto-populate based on config form fields or data keys
-    Object.keys(data).forEach(key => {
+    // Only populate fields that exist in the form (based on config.formFields or existing form elements)
+    const fieldsToPopulate = this.config.formFields 
+      ? this.config.formFields.map(field => field.id) 
+      : Object.keys(data);
+
+    fieldsToPopulate.forEach(key => {
       const field = document.getElementById(key);
-      if (field) {
+      if (field && data.hasOwnProperty(key)) {
         // Don't populate password fields in edit mode
         if (field.type === 'password' && this.currentMode === 'edit') {
           field.value = "";
@@ -237,6 +250,11 @@ class BaseModule {
         }
       }
     });
+
+    // For view mode, add additional information display if needed
+    if (this.currentMode === 'view') {
+      this.addViewModeInfo(data);
+    }
   }
 
   setFormMode(mode) {
@@ -299,105 +317,113 @@ class BaseModule {
     });
   }
 
-  async handleFormSubmit(event) {
+  /**
+   * Handles form submission for creating or updating records.
+   * It now supports both JSON and multipart/form-data submissions.
+   */
+  handleFormSubmit(event) {
     event.preventDefault();
-
-    // Validate form
     if (this.modalForm && !this.modalForm.validateForm()) {
-      alert("Please correct the form errors.");
+      alert("Please correct the form errors before submitting.");
       return;
-    }    // Get form data
-    const formData = this.modalForm 
-      ? this.modalForm.getFormData() 
-      : this.getFormDataFromDOM();
-
-    try {
-      let url = this.config.apiUrl;
-      let method = "POST";
-
-      if (this.currentMode === "edit" && this.currentItem) {
-        url += `/${this.currentItem.id}`;
-        method = "PUT";
-      } else if (this.currentMode === "create" && this.config.createUrl) {
-        // Use specific create URL if configured
-        url = this.config.createUrl;
-      }
-
-      const token = Auth.getToken();
-      
-      // Check if we have file uploads
-      const hasFiles = this.hasFileUploads();
-      
-      const requestOptions = {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };      if (hasFiles) {
-        // For file uploads, send FormData directly (don't set Content-Type)
-        const formElement = document.getElementById(this.config.formId);
-        const formDataToSend = new FormData(formElement);
-        
-        // Debug: Log FormData contents
-        console.log('📤 Sending FormData with files:');
-        for (let [key, value] of formDataToSend.entries()) {
-          console.log(`  ${key}:`, value);
-        }
-        
-        requestOptions.body = formDataToSend;
-      } else {
-        // For regular form data, send JSON
-        console.log('📤 Sending JSON data:', formData);
-        requestOptions.headers["Content-Type"] = "application/json";
-        requestOptions.body = JSON.stringify(formData);
-      }
-
-      const response = await fetch(url, requestOptions);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }      // Close modal
-      if (this.currentModal) {
-        this.currentModal.hide();
-      } else {
-        const modal = bootstrap.Modal.getInstance(document.getElementById(this.config.modalId));
-        modal?.hide();
-      }
-      
-      // Ensure cleanup happens
-      setTimeout(() => {
-        this.cleanupModalBackdrops();
-      }, 300);
-
-      // Refresh table
-      await this.dataTable.refresh();
-
-      // Show success message
-      const action = this.currentMode === "edit" ? "updated" : "created";
-      this.dataTable.showSuccess(`${this.config.entityName} ${action} successfully!`);
-
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      this.dataTable.showError("Failed to save: " + error.message);
     }
+
+    const form = document.getElementById(this.config.formId);
+    const id = this.currentItem ? this.currentItem.id : null;
+    const method = id ? "PUT" : "POST";
+    const url = id ? `${this.config.apiUrl}/${id}` : this.config.apiUrl;
+
+    const token = Auth.getToken();
+    if (!token) {
+      alert("Access denied. No token provided.");
+      console.error("Authentication token is missing. Cannot submit form.");
+      return;
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${token}`
+    };
+    
+    let body;
+
+    // If the form has a file input, ALWAYS use FormData.
+    // This ensures the backend multer middleware can always parse the request.
+    const formHasFileInput = form.querySelector('input[type="file"]');
+
+    if (formHasFileInput) {
+      body = new FormData(form);
+      // When using FormData, do NOT set the 'Content-Type' header.
+      // The browser will automatically set it with the correct boundary.
+    } else {
+      // For forms without file inputs, send as JSON.
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      body = JSON.stringify(data);
+      headers['Content-Type'] = 'application/json';
+    }
+
+    fetch(url, {
+      method: method,
+      headers: headers,
+      body: body,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          // Try to parse error message from JSON response
+          return response.json().then((err) => {
+            throw new Error(err.message || `Request failed with status ${response.status}`);
+          });
+        }
+        return response.json();
+      })
+      .then(() => {
+        if (this.currentModal) {
+          this.currentModal.hide();
+        }
+        if (this.dataTable) {
+          this.dataTable.refresh();
+        }
+      })
+      .catch((error) => {
+        console.error(`Error saving ${this.config.entityName}:`, error);
+        alert(`Failed to save ${this.config.entityName}. ${error.message}`);
+      });
   }
 
-  getFormDataFromDOM() {
-    const formElement = document.getElementById(this.config.formId);
-    const formData = new FormData(formElement);
-    const data = Object.fromEntries(formData.entries());
-    
-    // Special handling for password field in edit mode
-    if (this.currentMode === 'edit') {
-      const passwordField = formElement.querySelector('input[type="password"]');
-      if (passwordField && !passwordField.value.trim()) {
-        // Remove empty password from data to keep current password
-        delete data.password;
+  // Make sure this method is called from your init() or constructor
+  setupEventListeners() {
+    // Table events
+    document.addEventListener("table:create", (e) => this.handleCreate(e));
+    document.addEventListener("table:view", (e) => this.handleView(e));
+    document.addEventListener("table:edit", (e) => this.handleEdit(e));
+
+    // Form submission
+    if (this.config.formId) {
+      const form = document.getElementById(this.config.formId);
+      if (form) {
+        form.addEventListener("submit", this.handleFormSubmit.bind(this));
       }
     }
-    
-    return data;
-  }  async loadDropdownData() {
+
+    // Modal events
+    const modal = document.getElementById(this.config.modalId);
+    if (modal) {
+      modal.addEventListener("hidden.bs.modal", () => {
+        this.resetForm();
+        this.cleanupModalBackdrops();
+      });
+      
+      // Additional cleanup on show/hide
+      modal.addEventListener("show.bs.modal", () => {
+        this.cleanupModalBackdrops();
+      });
+    }
+
+    // Logout
+    this.setupLogout();
+  }
+
+  async loadDropdownData() {
     if (!this.config.dropdowns) return;
 
     // Check if user is authenticated
@@ -571,6 +597,68 @@ class BaseModule {
     const fileInputs = formElement.querySelectorAll('input[type="file"]');
     // Only return true if there are file inputs AND at least one has a file selected
     return Array.from(fileInputs).some(input => input.files && input.files.length > 0);
+  }
+
+  addViewModeInfo(data) {
+    // Add additional info for view mode that's not in the form
+    const modalBody = document.querySelector(`#${this.config.modalId} .modal-body`);
+    if (!modalBody) return;
+
+    // Remove any existing view info
+    const existingInfo = modalBody.querySelector('.view-mode-info');
+    if (existingInfo) {
+      existingInfo.remove();
+    }
+
+    // Create info container
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'view-mode-info mt-3 p-3 bg-light rounded';
+    
+    let additionalInfo = '';
+    
+    // Add fields that are not in the form but exist in the data
+    const formFieldIds = this.config.formFields ? this.config.formFields.map(f => f.id) : [];
+    const additionalFields = Object.keys(data).filter(key => 
+      !formFieldIds.includes(key) && 
+      !['id', 'created_at', 'updated_at'].includes(key) && 
+      data[key] !== null && 
+      data[key] !== undefined && 
+      data[key] !== ''
+    );
+
+    if (additionalFields.length > 0) {
+      additionalInfo += '<h6 class="text-muted mb-2">Additional Information:</h6>';
+      additionalFields.forEach(field => {
+        const label = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const value = data[field];
+        additionalInfo += `<div class="row mb-1">
+          <div class="col-4 text-muted">${label}:</div>
+          <div class="col-8">${value}</div>
+        </div>`;
+      });
+    }
+
+    // Add timestamps if available
+    if (data.created_at || data.updated_at) {
+      additionalInfo += '<h6 class="text-muted mb-2 mt-3">Timestamps:</h6>';
+      if (data.created_at) {
+        additionalInfo += `<div class="row mb-1">
+          <div class="col-4 text-muted">Created:</div>
+          <div class="col-8">${new Date(data.created_at).toLocaleString()}</div>
+        </div>`;
+      }
+      if (data.updated_at) {
+        additionalInfo += `<div class="row mb-1">
+          <div class="col-4 text-muted">Updated:</div>
+          <div class="col-8">${new Date(data.updated_at).toLocaleString()}</div>
+        </div>`;
+      }
+    }
+
+    if (additionalInfo) {
+      infoDiv.innerHTML = additionalInfo;
+      modalBody.appendChild(infoDiv);
+    }
   }
 
   // Public API

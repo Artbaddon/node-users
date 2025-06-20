@@ -119,7 +119,7 @@ class DataTableComponent {
 
       const result = await response.json();
       console.log('📄 API response:', result);      // Handle different response formats
-      this.data = result.data || result.documentTypes || result.users || result.roles || result.permissions || [];
+      this.data = result.data || result.documentTypes || result.users || result.roles || result.permissions || result.profiles || [];
       console.log('📋 Loaded data:', this.data.length, 'items');
       
       if (this.data.length > 0) {
@@ -167,28 +167,28 @@ class DataTableComponent {
       
       const button = e.target.closest('.view-btn, .edit-btn, .delete-btn');
       if (!button) {
-        console.log('❌ No action button found');
+        console.log('No action button found');
         return;
       }
 
-      console.log('✅ Action button found:', button.className);
+      console.log('Action button found:', button.className);
       
       const id = button.dataset.id;
       if (!id) {
-        console.error('❌ No ID found on button:', button);
+        console.error('No ID found on button:', button);
         return;
       }
 
-      console.log('🔑 Button ID:', id);
+      console.log('Button ID:', id);
 
       if (button.classList.contains('view-btn')) {
-        console.log('👁️ Handling view for ID:', id);
+        console.log('Handling view for ID:', id);
         this.handleView(id);
       } else if (button.classList.contains('edit-btn')) {
-        console.log('✏️ Handling edit for ID:', id);
+        console.log('Handling edit for ID:', id);
         this.handleEdit(id);
       } else if (button.classList.contains('delete-btn')) {
-        console.log('🗑️ Handling delete for ID:', id);
+        console.log('Handling delete for ID:', id);
         this.handleDelete(id);
       }
     };
@@ -290,5 +290,3 @@ class DataTableComponent {
   }
 }
 
-// DataTableComponent class can be used by any module
-// Initialization is handled by individual modules, not here automatically

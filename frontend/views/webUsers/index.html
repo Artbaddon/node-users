@@ -78,6 +78,7 @@
         </div>
       </div>
     </nav>
+
     <div class="d-flex flex-nowrap vh-100">
       <!-- Dynamic Navigation Sidebar -->
       <nav
@@ -143,8 +144,6 @@
                           <th scope="col">ID</th>
                           <th scope="col">Username</th>
                           <th scope="col">Email</th>
-                          <th scope="col">First Name</th>
-                          <th scope="col">Last Name</th>
                           <th scope="col">Role</th>
                           <th scope="col">Status</th>
                           <th scope="col">Actions</th>
@@ -157,192 +156,82 @@
               </div>
             </div>
           </div>
-          <div
-            class="modal fade"
-            id="modal-form"
-            tabindex="-1"
-            aria-labelledby="modal-form"
-            aria-hidden="true"
-          >
-            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+
+          <!-- FIXED MODAL FORM -->
+          <div class="modal fade" id="modal-form" tabindex="-1" aria-labelledby="modal-form" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
               <div class="modal-content">
                 <div class="modal-header">
                   <h1 class="modal-title fs-5" id="modal-form-title">
-                    Web User
+                    <i class="bi bi-person-plus me-2"></i>Create Web User
                   </h1>
-                  <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  ></button>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                   <form id="webUserForm">
-                    <div class="form-floating mb-3">
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="username"
-                        name="username"
-                        placeholder="Username"
-                        required
-                        minlength="3"
-                      />
-                      <label for="username">Username</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                      <input
-                        type="email"
-                        class="form-control"
-                        id="email"
-                        name="email"
-                        placeholder="user@example.com"
-                        required
-                      />
-                      <label for="email">Email</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="first_name"
-                        name="first_name"
-                        placeholder="First Name"
-                        required
-                        minlength="2"
-                      />
-                      <label for="first_name">First Name</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="last_name"
-                        name="last_name"
-                        placeholder="Last Name"
-                        required
-                        minlength="2"
-                      />
-                      <label for="last_name">Last Name</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="address"
-                        name="address"
-                        placeholder="Address"
-                      />
-                      <label for="address">Address</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                      <input
-                        type="tel"
-                        class="form-control"
-                        id="phone"
-                        name="phone"
-                        placeholder="Phone Number"
-                      />
-                      <label for="phone">Phone</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                      <select
-                        class="form-select"
-                        id="document_type_id"
-                        name="document_type_id"
-                      >
-                        <option value="">Loading document types...</option>
-                      </select>
-                      <label for="document_type_id">Document Type</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="document_number"
-                        name="document_number"
-                        placeholder="Document Number"
-                      />
-                      <label for="document_number">Document Number</label>
-                    </div>
-                    <div class="mb-3">
-                      <label for="photo" class="form-label">Photo</label>
-                      <input
-                        type="file"
-                        class="form-control"
-                        id="photo"
-                        name="photo"
-                        accept="image/*"
-                      />
-                      <div class="form-text">
-                        Select an image file (JPG, PNG, GIF)
+                    <!-- User Account Information -->
+                    <div class="row mb-4">
+                      <div class="col-12">
+                        <h5 class="text-primary border-bottom pb-2">
+                          <i class="bi bi-person-circle me-2"></i>Account Information
+                        </h5>
                       </div>
                     </div>
-                    <div class="form-floating mb-3">
-                      <input
-                        type="date"
-                        class="form-control"
-                        id="birth_date"
-                        name="birth_date"
-                        placeholder="Birth Date"
-                      />
-                      <label for="birth_date">Birth Date</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                      <input
-                        type="password"
-                        class="form-control"
-                        id="password"
-                        name="password"
-                        placeholder="Password"
-                        required
-                        minlength="6"
-                        autocomplete="new-password"
-                      />
-                      <label for="password">Password</label>
-                      <div class="form-text">
-                        Leave blank to keep current password (edit mode)
+                    
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                          <input type="text" class="form-control" id="username" name="username" placeholder="Username" required minlength="3" />
+                          <label for="username"><i class="bi bi-person me-1"></i>Username</label>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                          <input type="email" class="form-control" id="email" name="email" placeholder="user@example.com" required />
+                          <label for="email"><i class="bi bi-envelope me-1"></i>Email</label>
+                        </div>
                       </div>
                     </div>
-                    <div class="form-floating mb-3">
-                      <select
-                        class="form-select"
-                        id="status_id"
-                        name="status_id"
-                        required
-                      >
-                        <option value="">Loading statuses...</option>
-                      </select>
-                      <label for="status_id">Status</label>
+
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="form-floating mb-3">
+                          <input type="password" class="form-control" id="password" name="password" placeholder="Password" required minlength="6" autocomplete="new-password" />
+                          <label for="password"><i class="bi bi-lock me-1"></i>Password</label>
+                          <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>Leave blank to keep current password (edit mode)
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-floating mb-3">
+                          <select class="form-select" id="role_id" name="role_id" required>
+                            <option value="">Loading roles...</option>
+                          </select>
+                          <label for="role_id"><i class="bi bi-shield-check me-1"></i>Role</label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-floating mb-3">
+                          <select class="form-select" id="status_id" name="status_id" required>
+                            <option value="">Loading statuses...</option>
+                          </select>
+                          <label for="status_id"><i class="bi bi-toggle-on me-1"></i>Status</label>
+                        </div>
+                      </div>
                     </div>
-                    <div class="form-floating mb-3">
-                      <select
-                        class="form-select"
-                        id="role_id"
-                        name="role_id"
-                        required
-                      >
-                        <option value="">Loading roles...</option>
-                      </select>
-                      <label for="role_id">Role</label>
-                    </div>
-                    <div class="modal-footer">
-                      <button
-                        type="button"
-                        class="btn btn-secondary"
-                        data-bs-dismiss="modal"
-                      >
-                        <i class="bi bi-x-circle me-2"></i>Cancel
-                      </button>
-                      <button type="reset" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
-                      </button>
-                      <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save2 me-2"></i>Save
-                      </button>
-                    </div>
-                  </form>
+
+                   
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('webUserForm').reset(); document.getElementById('photo-preview').src='https://via.placeholder.com/150x150?text=No+Photo';">
+                    <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
+                  </button>
+                  <button type="submit" form="webUserForm" class="btn btn-primary">
+                    <i class="bi bi-save2 me-2"></i>Save User
+                  </button>
                 </div>
               </div>
             </div>
@@ -350,18 +239,13 @@
         </section>
       </main>
     </div>
+
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.min.js"
-      integrity="sha384-RuyvpeZCxMJCqVUGFI0Do1mQrods/hhxYlcVfGPOfQtPJh0JCw12tUAZ/Mv10S7D"
-      crossorigin="anonymous"
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.min.js" integrity="sha384-RuyvpeZCxMJCqVUGFI0Do1mQrods/hhxYlcVfGPOfQtPJh0JCw12tUAZ/Mv10S7D" crossorigin="anonymous"></script>
+    
     <!-- Core utilities (load first) -->
     <script src="../../assets/js/auth/auth.js"></script>
     <script src="../../assets/js/config/apiConfig.js"></script>
@@ -375,28 +259,59 @@
     <script src="../../assets/js/util/Table.js"></script>
     <script src="../../assets/js/util/BaseModule.js"></script>
     <script src="../../assets/js/util/config/ModuleConfigs.js"></script>
+
     <!-- Initialize the module -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         const webUsersModule = new BaseModule(ModuleConfigs.webUsers);
         webUsersModule.init();
-
-        // Make module globally accessible for debugging
         window.webUsersModule = webUsersModule;
 
-        // Add debug button temporarily
-        console.log(
-          "🐛 Debug: webUsersModule is available as window.webUsersModule"
-        );
-        console.log(
-          "🐛 You can call window.webUsersModule.refreshDropdowns() to test dropdowns"
-        );
-        let webUserForm1 = document.getElementById("webUserForm");
-        webUserForm1.addEventListener("submit", function (event) {
+        // Photo preview functionality
+        document.getElementById('photo').addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          const preview = document.getElementById('photo-preview');
+          
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              preview.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          } else {
+            preview.src = 'https://via.placeholder.com/150x150?text=No+Photo';
+          }
+        });
+
+        // Form submission handler
+        document.getElementById('webUserForm').addEventListener('submit', function(event) {
           event.preventDefault();
-          console.log("🐛 Debug: webUserForm1 submitted", webUserForm1);
+          console.log("🐛 Debug: webUserForm submitted", this);
+          
+          // Validate required fields
+          const requiredFields = ['username', 'email', 'first_name', 'last_name', 'role_id', 'status_id'];
+          let isValid = true;
+          
+          requiredFields.forEach(fieldName => {
+            const field = document.getElementById(fieldName);
+            if (!field.value.trim()) {
+              field.classList.add('is-invalid');
+              isValid = false;
+            } else {
+              field.classList.remove('is-invalid');
+            }
+          });
+          
+          if (isValid) {
+            // Process form submission
+            console.log("✅ Form is valid, processing submission...");
+            // Your form submission logic here
+          } else {
+            console.log("❌ Form validation failed");
+          }
         });
       });
     </script>
   </body>
 </html>
+`

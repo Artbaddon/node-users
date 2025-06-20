@@ -83,22 +83,6 @@ class Navigation {
         roles: ["admin"],
         category: "system",
       },
-      {
-        id: "reports",
-        label: "Reports",
-        icon: "bi-file-earmark-bar-graph",
-        url: "../reports/index.html",
-        roles: ["admin"],
-        category: "system",
-      },
-      {
-        id: "help",
-        label: "Help",
-        icon: "bi-question-circle",
-        url: "../help/index.html",
-        roles: ["admin"],
-        category: "system",
-      },
     ];
   }
 

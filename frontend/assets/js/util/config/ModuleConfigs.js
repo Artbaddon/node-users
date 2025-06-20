@@ -1,4 +1,5 @@
-const ModuleConfigs = {  documentType: {
+const ModuleConfigs = {
+  documentType: {
     tableId: "data-table",
     apiUrl: "http://localhost:3000/api_v1/documentType",
     formId: "documentTypeForm",
@@ -29,8 +30,7 @@ const ModuleConfigs = {  documentType: {
       },
     ],
     actions: ["view", "edit", "delete"],
-  },
-  webUsers: {
+  },  webUsers: {
     tableId: "data-table",
     apiUrl: "http://localhost:3000/api_v1/web-users",
     createUrl: "http://localhost:3000/api_v1/web-users/admin/create",
@@ -39,14 +39,7 @@ const ModuleConfigs = {  documentType: {
     formFields: [
       { id: "username", required: true },
       { id: "email", required: true },
-      { id: "first_name", required: true },
-      { id: "last_name", required: true },
-      { id: "address", required: false },
-      { id: "phone", required: false },
-      { id: "document_type_id", required: false },
-      { id: "document_number", required: false },
-      { id: "birth_date", required: false },
-      { id: "password", required: false }, // Only required for create mode
+      { id: "password", required: true }, // Required for create mode
       { id: "status_id", required: true },
       { id: "role_id", required: true },
     ],
@@ -85,27 +78,10 @@ const ModuleConfigs = {  documentType: {
           { id: 3, name: "P" },
         ],
       },
-    },
-    columns: [
+    },    columns: [
       { key: "id", label: "ID", sortable: true, className: "text-center" },
       { key: "username", label: "Username", sortable: true },
       { key: "email", label: "Email", sortable: true },
-      { key: "first_name", label: "First Name", sortable: true },
-      { key: "last_name", label: "Last Name", sortable: true },
-      { key: "address", label: "Address", sortable: true },
-      { key: "phone", label: "Phone", sortable: true },
-      {
-        key: "birth_date",
-        label: "Birth Date",
-        sortable: true,
-        render: (data, type, row) => {
-          if (!data) return "";
-          // Format date as YYYY-MM-DD for display
-          const date = new Date(data);
-          return date.toLocaleDateString();
-        },
-      },
-      { key: "document_number", label: "Document", sortable: true },
       {
         key: "role_id",
         label: "Role",
@@ -185,9 +161,7 @@ const ModuleConfigs = {  documentType: {
             badgeClass = "success";
           } else if (statusName.toLowerCase().includes("suspend")) {
             badgeClass = "warning";
-          }
-
-          return `<span class="badge bg-${badgeClass}">${statusName}</span>`;
+          }          return `<span class="badge bg-${badgeClass}">${statusName}</span>`;
         },
       },
     ],
@@ -244,92 +218,124 @@ const ModuleConfigs = {  documentType: {
     ],
     columns: [
       { key: "id", label: "ID", sortable: true, className: "text-center" },
-      { key: "name", label: "Name", sortable: true },
-      { key: "description", label: "Description", sortable: true },
-    ],
+      { key: "name", label: "Name", sortable: true },      { key: "description", label: "Description", sortable: true },    ],
     actions: ["view", "edit", "delete"],
-  },
-  roles: {
-    tableId: "data-table",
-    apiUrl: "http://localhost:3000/api_v1/roles",
-    entityName: "Role",
-    formId: "roleForm", // This form ID exists in the HTML
-    formFields: [
-      { id: "name", required: true },
-      { id: "description", required: true },
-      { id: "is_active", required: true },
-    ],
-    columns: [
-      { key: "id", label: "ID", sortable: true, className: "text-center" },
-      { key: "name", label: "Name", sortable: true },
-      { key: "description", label: "Description", sortable: true },
-      { key: "is_active", label: "Is Active", sortable: true },
-    ],
-    actions: ["view", "edit", "delete"],
-  },
-  modules: {
+  },  modules: {
     tableId: "data-table",
     apiUrl: "http://localhost:3000/api_v1/modules",
     entityName: "Module",
     formId: "moduleForm",
     formFields: [
       { id: "name", required: true },
+      { id: "description", required: true }
+    ],
+    columns: [
+      { key: "id", label: "ID", sortable: true, className: "text-center" },
+      { key: "name", label: "Name", sortable: true },
+      { key: "description", label: "Description", sortable: true }
+    ],
+    actions: ["view", "edit", "delete"]
+  },
+  profiles: {
+    tableId: "data-table",
+    apiUrl: "http://localhost:3000/api_v1/profile",
+    entityName: "Profile",
+    formId: "profileForm",    formFields: [
+      { id: "web_user_id", required: true },
+      { id: "first_name", required: true },
+      { id: "last_name", required: true },
+      { id: "address", required: false },
+      { id: "phone", required: false },
+      { id: "document_type_id", required: false },
+      { id: "document_number", required: false },
+      { id: "profile_photo", required: false },
+      { id: "birth_date", required: false }
+    ],
+    dropdowns: {
+      web_user_id: {
+        url: "http://localhost:3000/api_v1/web-users",
+        valueField: "id",
+        textField: "username",
+        placeholder: "Select User",
+        fallbackData: []
+      },
+      document_type_id: {
+        url: "http://localhost:3000/api_v1/documentType/",
+        valueField: "id",
+        textField: "name",
+        placeholder: "Select Document Type",
+        fallbackData: [
+          { id: 1, name: "CC" },
+          { id: 2, name: "TI" },
+          { id: 3, name: "P" },
+        ],
+      },
+    },
+    columns: [
+      { key: "id", label: "ID", sortable: true, className: "text-center" },
+      { 
+        key: "web_user_id", 
+        label: "User", 
+        sortable: true,
+        render: (data, type, row) => {
+          const username = row.username || row.user_username || `User ${data}`;
+          return `<span class="badge bg-primary">${username}</span>`;
+        }
+      },
+      { 
+        key: "first_name", 
+        label: "Full Name", 
+        sortable: true,
+        render: (data, type, row) => {
+          const firstName = row.first_name || '';
+          const lastName = row.last_name || '';
+          return `${firstName} ${lastName}`.trim() || 'N/A';
+        }
+      },
+      { key: "phone", label: "Phone", sortable: true },
+      { 
+        key: "document_number", 
+        label: "Document", 
+        sortable: true,
+        render: (data, type, row) => {
+          if (!data) return 'N/A';
+          const docType = row.document_type_name || row.document_type || '';
+          return docType ? `${docType}: ${data}` : data;
+        }
+      },
+      { 
+        key: "photo_url", 
+        label: "Photo", 
+        sortable: false,
+        render: (data) => {
+          if (data) {
+            return `<img src="${data}" alt="Profile" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;">`;
+          }
+          return '<i class="bi bi-person-circle text-muted" style="font-size: 40px;"></i>';
+        }
+      }
+    ],
+    actions: ["view", "edit", "delete"]
+  },  permissions: {
+    tableId: "data-table",
+    apiUrl: "http://localhost:3000/api_v1/permissions",
+    entityName: "Permission",
+    formId: "permissionForm",
+    formFields: [
+      { id: "name", required: true },
       { id: "description", required: true },
-      { id: "route", required: true },
-      { id: "icon", required: false },
-      { id: "display_order", required: false },
-      { id: "is_active", type: "checkbox", required: false, defaultValue: 1 }
+      { id: "action", required: true }
     ],
     columns: [
       { key: "id", label: "ID", sortable: true, className: "text-center" },
       { key: "name", label: "Name", sortable: true },
       { key: "description", label: "Description", sortable: true },
-      { key: "route", label: "Route", sortable: true, 
-        render: (data) => `<code>${data}</code>` },
-      { key: "icon", label: "Icon", sortable: true,
-        render: (data) => data ? `<i class="${data} me-2"></i>${data}` : '<span class="text-muted">No icon</span>' },
-      { key: "display_order", label: "Order", sortable: true, className: "text-center" },
-      {
-        key: "is_active",
-        label: "Status",
-        sortable: true,
-        render: (data) => {
-          const badgeClass = data ? "success" : "secondary";
-          const text = data ? "Active" : "Inactive";
-          return `<span class="badge bg-${badgeClass}">${text}</span>`;
-        },
-      },
+      { key: "action", label: "Action", sortable: true, 
+        render: (data) => `<span class="badge bg-info">${data}</span>` }
     ],
     actions: ["view", "edit", "delete"]
-  },
-
-  /*
-  newModuleName: {
-    tableId: "data-table",
-    apiUrl: "http://localhost:3000/api_v1/your-endpoint",
-    entityName: "Your Entity Name",
-    formId: "yourEntityForm",
-    formFields: [
-      { id: "field1", required: true },
-      { id: "field2", required: false },
-      // Add more fields as needed
-    ],
-    columns: [
-      { key: "id", label: "ID", sortable: true, className: "text-center" },
-      { key: "name", label: "Name", sortable: true },
-      { 
-        key: "status", 
-        label: "Status", 
-        sortable: true,
-        render: (data, type, row) => {
-          // Custom rendering logic
-          return `<span class="badge bg-success">${data}</span>`;
-        }
-      }
-    ],
-    actions: ["view", "edit", "delete"],
-    requiredPermissions: ["module_name:read"],
-    permissionPattern: "module_name"
-  },
-  */
+  }
 };
+
+// Debug: Log all available configs
+console.log('📋 Available ModuleConfigs:', Object.keys(ModuleConfigs));
